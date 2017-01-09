@@ -43,7 +43,7 @@ public class MyWorkThread extends Thread {
 
         InitServerSocket();
         try {
-            while (true) {
+            while (!shutdownRequested) {
                 System.out.println("work thread waitting...");
                 this.client = serverSocket.accept();
 //                clients.add(this.client);
@@ -67,7 +67,11 @@ public class MyWorkThread extends Thread {
     }
 
     public Socket getClient() {
-
+//        if (this.clients.size() == 0) {
+//            return null;
+//        } else {
+//             return this.clients.get(0);
+//        }
         return this.client;
     }
 

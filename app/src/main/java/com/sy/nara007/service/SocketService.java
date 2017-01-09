@@ -33,8 +33,6 @@ public class SocketService extends Service {
     @Override
     public boolean onUnbind(Intent intent) {
 
-
-//        this.socketThread.stopServerSocket();
         return super.onUnbind(intent);
     }
 

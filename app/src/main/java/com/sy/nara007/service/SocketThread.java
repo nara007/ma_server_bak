@@ -28,17 +28,14 @@ public class SocketThread extends Thread {
 
 
     private ServerSocket serverSocket;
-    //    private volatile boolean shutdownRequested = false;
     private Handler msgHandler = null;
 
-    //    private Socket client = null;
     private MyWorkThread myWorkThread = new MyWorkThread();
 
     public void stopServerSocket() {
         this.myWorkThread.shutdownServerSocket();
     }
 
-    //    private String IP = "127.0.0.1";
     private int port = 10000;
 
     public SocketThread() {
@@ -111,7 +108,7 @@ public class SocketThread extends Thread {
             @Override
             public void handleMessage(Message msg) {
 
-//                if (msg.what == 0x1) {
+                if (msg.what == 0x1) {
                     float[] values = (float[]) msg.obj;
 //                System.out.println("子线程收到消息:" + Float.toString(values[0]) + "  " + Float.toString(values[1]) + "  " + Float.toString(values[2]));
 
@@ -129,18 +126,16 @@ public class SocketThread extends Thread {
                     OutputToClient(byteMerger(w, byteMerger(byteMerger(x, y), z)));
 
                     System.out.println("Rotation Vector Sensor w,x,y,z: " + values[0] + " " + values[1] + " " + values[2] + " " + values[3]);
-//                } else if (msg.what == 0x2) {
-//                    shutdownWorkThread();
-//                    try {
-//                        Thread.sleep(1500);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                    this.getLooper().quit();
-//                } else {
-//                }
-
-
+                } else if (msg.what == 0x2) {
+                    shutdownWorkThread();
+                    try {
+                        Thread.sleep(1500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    this.getLooper().quit();
+                } else {
+                }
             }
         };
 
@@ -153,7 +148,6 @@ public class SocketThread extends Thread {
     }
 
     public void run() {
-//        System.out.println("123");
         myWorkThread.start();
 
         try {
@@ -162,26 +156,24 @@ public class SocketThread extends Thread {
             e.printStackTrace();
         }
         InitMsgQueue();
-//        startService();
     }
 
 
     private void OutputToClient(byte[] bytes) {
 
 
-//        if (myWorkThread.isAlive()) {
-            if (myWorkThread.getClient() != null) {
+        if (myWorkThread.isAlive()) {
+        if (myWorkThread.getClient() != null) {
 
-                try {
-                    OutputStream outputStream = myWorkThread.getClient().getOutputStream();
-                    outputStream.write(bytes);
-                    outputStream.flush();
-//                System.out.println("子线程 " + bytes);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            try {
+                OutputStream outputStream = myWorkThread.getClient().getOutputStream();
+                outputStream.write(bytes);
+                outputStream.flush();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-//        }
+        }
+        }
     }
 
     // int转换为byte[4]数组
