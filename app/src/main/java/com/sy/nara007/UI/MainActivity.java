@@ -21,7 +21,7 @@ import android.widget.Toast;
 import com.sy.nara007.service.SocketService;
 import com.sy.nara007.service.SocketThread;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ServiceConnection {
 
     private IBinder mBinder;
     private Boolean mIsBound;
@@ -113,17 +113,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 startService(MainActivity.this.serviceIntent);
-//                bindService(MainActivity.this.serviceIntent, MainActivity.this, Context.BIND_AUTO_CREATE);
-                doBindService();
+                bindService(MainActivity.this.serviceIntent, MainActivity.this, Context.BIND_AUTO_CREATE);
+//                doBindService();
             }
         });
 
         this.stopServer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                sendShutdownMsg();
-//                unbindService(MainActivity.this);
-                doUnbindService();
+//                sendShutdownMsg();
+                unbindService(MainActivity.this);
+//                doUnbindService();
                 stopService(MainActivity.this.serviceIntent);
             }
         });
@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
         msg.what = QUIT;
 
         if (MainActivity.this.socketService != null) {
-            if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+            if (MainActivity.this.socketService.getSocketThread() != null) {
                 if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
                     MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msg);
                 }
@@ -283,5 +283,18 @@ public class MainActivity extends AppCompatActivity {
 //        }
 //    };
 
+
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+
+        MainActivity.this.socketService = ((SocketService.ServiceBinder) iBinder).getService();
+        System.out.println("onServiceConnected");
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) {
+        MainActivity.this.socketService = null;
+        System.out.println("onServiceDisconnected");
+    }
 
 }

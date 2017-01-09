@@ -43,22 +43,22 @@ public class MyWorkThread extends Thread {
 
         InitServerSocket();
         try {
-            while (!shutdownRequested) {
+            while (true) {
                 System.out.println("work thread waitting...");
                 this.client = serverSocket.accept();
-                clients.add(this.client);
+//                clients.add(this.client);
 //                new EventHandler(client).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        finally {
-            try {
-                this.serverSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+//        finally {
+//            try {
+//                this.serverSocket.close();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
     }
 
     public void run() {
@@ -68,11 +68,7 @@ public class MyWorkThread extends Thread {
 
     public Socket getClient() {
 
-        if (clients.size() != 0) {
-            return clients.get(0);
-        } else {
-            return null;
-        }
+        return this.client;
     }
 
     public void shutdownServerSocket() {
