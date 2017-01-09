@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.sy.nara007.UI.MainActivity">
+
+    <Button
+        android:id="@+id/startServer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="40dp"
+        android:text="StartServer" />
+
+    <TextView
+        android:id="@+id/tv_X"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/stopServer"
+        android:layout_marginLeft="27dp"
+        android:layout_marginStart="27dp"
+        android:layout_marginTop="25dp"
+        android:text="tv_X" />
+
+    <TextView
+        android:id="@+id/tv_Y"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tv_X"
+        android:layout_alignStart="@+id/tv_X"
+        android:layout_below="@+id/tv_X"
+        android:layout_marginTop="25dp"
+        android:text="tv_Y" />
+
+    <TextView
+        android:id="@+id/tv_Z"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/tv_Y"
+        android:layout_alignStart="@+id/tv_Y"
+        android:layout_below="@+id/tv_Y"
+        android:layout_marginTop="25dp"
+        android:text="tv_Z" />
+
+    <TextView
+        android:text="tv_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tv_Z"
+        android:layout_alignLeft="@+id/tv_Z"
+        android:layout_alignStart="@+id/tv_Z"
+        android:layout_marginTop="25dp"
+        android:id="@+id/tv_info" />
+
+    <Button
+        android:id="@+id/stopServer"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="StopServer"
+        android:layout_width="match_parent"
+        android:layout_below="@+id/startServer"
+        android:layout_centerHorizontal="true" />
+</RelativeLayout>
