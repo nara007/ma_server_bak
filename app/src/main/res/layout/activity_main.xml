@@ -69,4 +69,13 @@
         android:layout_width="match_parent"
         android:layout_below="@+id/startServer"
         android:layout_centerHorizontal="true" />
+
+    <Button
+        android:text="BluetoothConnection"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tv_info"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="36dp"
+        android:id="@+id/bluetooth" />
 </RelativeLayout>
