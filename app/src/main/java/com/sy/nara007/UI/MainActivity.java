@@ -16,6 +16,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -32,6 +33,7 @@ import com.sy.nara007.service.SocketThread;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements ServiceConnection {
 
@@ -74,6 +76,9 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     boolean haveMagnetometer = false;
 
     private int mAzimuth = 0; // degree
+
+    //TTS
+    public static TextToSpeech tts;
 
 
     //    bluetooth  These constants are copied from the BluezService
@@ -205,8 +210,24 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //TTS
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                // TTS初期化
+                if (TextToSpeech.SUCCESS == status) {
+                    System.out.println("initialized");
+                } else {
+                    System.out.println("failed to initialize");
+                }
+            }
+        });
+        tts.setLanguage(Locale.UK);
+
         initComponents();
 
         soundpool = new SoundPool(2, AudioManager.STREAM_SYSTEM, 0);
@@ -270,6 +291,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     protected void onDestroy() {
         super.onDestroy();
         System.out.println("on destroy...");
+        shutDownTTS();
         sensorManager.unregisterListener(sensoreventlistener);
 
 //        bluetooth
@@ -280,6 +302,13 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 //        sensorManager.unregisterListener(sensoreventlistenerQuaternion);
     }
 
+
+    private void shutDownTTS(){
+        if (null != tts) {
+            // to release the resource of TextToSpeech
+            tts.shutdown();
+        }
+    }
 
     //    bluetooth
     private BroadcastReceiver stateCallback = new BroadcastReceiver() {
