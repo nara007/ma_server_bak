@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             for(String str:matches){
                 if(str.contains("tell me") && !str.contains("not") && !str.contains("don't") && !str.contains("do not"))
                 {
-                    System.out.println("this string contains tell me");
+//                    System.out.println("this string contains tell me");
                     sendTELLMEMsg();
                     break;
                 }

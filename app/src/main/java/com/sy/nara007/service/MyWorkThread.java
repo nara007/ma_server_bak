@@ -20,7 +20,7 @@ public class MyWorkThread extends Thread {
     private volatile boolean shutdownRequested;
     private Handler msgHandler = null;
 
-    private Socket client = null;
+    private volatile Socket client = null;
     private List<Socket> clients = Collections.synchronizedList(new ArrayList<Socket>());
     private int port = 10000;
 

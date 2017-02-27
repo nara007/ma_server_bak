@@ -30,7 +30,8 @@ public class SocketThread extends Thread {
     private ServerSocket serverSocket;
     private Handler msgHandler = null;
 
-    private MyWorkThread myWorkThread = new MyWorkThread();
+    public static MyWorkThread myWorkThread = new MyWorkThread();
+    public static ReadThread myReadThread = new ReadThread();
 
     public void stopServerSocket() {
         this.myWorkThread.shutdownServerSocket();
@@ -146,13 +147,13 @@ public class SocketThread extends Thread {
                     byte[] type = SocketThread.getByteArray(0x4);
                     byte[] front = SocketThread.getByteArray(frontDirection);
                     OutputToClient(byteMerger(type, front));
-                    System.out.println("front "+frontDirection);
+//                    System.out.println("front "+frontDirection);
 
                 }
                 else if(msg.what == 0x5){
                     byte[] type = SocketThread.getByteArray(0x5);
                     OutputToClient(type);
-                    System.out.println("tell me");
+//                    System.out.println("tell me");
                 }
 
                 else {
@@ -170,6 +171,7 @@ public class SocketThread extends Thread {
 
     public void run() {
         myWorkThread.start();
+        myReadThread.start();
 
         try {
             Thread.sleep(2000);
