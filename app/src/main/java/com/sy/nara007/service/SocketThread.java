@@ -118,14 +118,14 @@ public class SocketThread extends Thread {
 //                byte[] roll = SocketThread.getByteArray(values[2]);
 //                OutputToClient(byteMerger(byteMerger(yaw, pitch), roll));
 
-
+                    byte[] type = SocketThread.getByteArray(0x1);
                     byte[] w = SocketThread.getByteArray(values[0]);
                     byte[] x = SocketThread.getByteArray(values[1]);
                     byte[] y = SocketThread.getByteArray(values[2]);
                     byte[] z = SocketThread.getByteArray(values[3]);
-                    OutputToClient(byteMerger(w, byteMerger(byteMerger(x, y), z)));
+                    OutputToClient(byteMerger(type, byteMerger(w, byteMerger(byteMerger(x, y), z))));
 
-                    System.out.println("Rotation Vector Sensor w,x,y,z: " + values[0] + " " + values[1] + " " + values[2] + " " + values[3]);
+//                    System.out.println("Rotation Vector Sensor w,x,y,z: " + values[0] + " " + values[1] + " " + values[2] + " " + values[3]);
                 } else if (msg.what == 0x2) {
                     shutdownWorkThread();
                     try {
@@ -134,7 +134,28 @@ public class SocketThread extends Thread {
                         e.printStackTrace();
                     }
                     this.getLooper().quit();
-                } else {
+                } else if (msg.what == 0x3) {
+                    int key = (int) msg.obj;
+                    System.out.println(key);
+                    byte[] type = SocketThread.getByteArray(0x3);
+                    byte[] keyInByte = SocketThread.getByteArray(key);
+                    OutputToClient(byteMerger(type, keyInByte));
+                } else if(msg.what == 0x4){
+
+                    float frontDirection = (float) msg.obj;
+                    byte[] type = SocketThread.getByteArray(0x4);
+                    byte[] front = SocketThread.getByteArray(frontDirection);
+                    OutputToClient(byteMerger(type, front));
+                    System.out.println("front "+frontDirection);
+
+                }
+                else if(msg.what == 0x5){
+                    byte[] type = SocketThread.getByteArray(0x5);
+                    OutputToClient(type);
+                    System.out.println("tell me");
+                }
+
+                else {
                 }
             }
         };
@@ -163,16 +184,16 @@ public class SocketThread extends Thread {
 
 
         if (myWorkThread.isAlive()) {
-        if (myWorkThread.getClient() != null) {
+            if (myWorkThread.getClient() != null) {
 
-            try {
-                OutputStream outputStream = myWorkThread.getClient().getOutputStream();
-                outputStream.write(bytes);
-                outputStream.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
+                try {
+                    OutputStream outputStream = myWorkThread.getClient().getOutputStream();
+                    outputStream.write(bytes);
+                    outputStream.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        }
         }
     }
 
@@ -190,7 +211,7 @@ public class SocketThread extends Thread {
     // float转换为byte[4]数组
     public static byte[] getByteArray(float f) {
 //        int intbits = Float.floatToIntBits(f);//将float里面的二进制串解释为int整数
-        int intbits = Math.round(f * 1000000000);
+        int intbits = Math.round(f * 1000000);
 //        System.out.println("changed to int: " + intbits);
         return getByteArray(intbits);
     }

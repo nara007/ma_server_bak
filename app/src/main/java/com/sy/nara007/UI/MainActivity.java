@@ -55,6 +55,9 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     Sensor accSensor;//传感器对象
     private static final byte CHANGE = 0x1;
     private static final byte QUIT = 0x2;
+    private static final byte BLUETOOTHMSG = 0x3;
+    private static final byte FRONT = 0x4;
+    private static final byte TELLME = 0x5;
     private SocketService socketService;
 
     // quaternion
@@ -186,6 +189,14 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             System.out.println(matches);
 //            mList.setAdapter(new ArrayAdapter<String>(this,
 //                    android.R.layout.simple_list_item_1, matches));  //在listview中显示结果
+            for(String str:matches){
+                if(str.contains("tell me") && !str.contains("not") && !str.contains("don't") && !str.contains("do not"))
+                {
+                    System.out.println("this string contains tell me");
+                    sendTELLMEMsg();
+                    break;
+                }
+            }
         }
 
         super.onActivityResult(requestCode, resultCode, data);
@@ -338,13 +349,28 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             } else if (intent.getAction().equals(EVENT_KEYPRESS)) {
                 int key = intent.getIntExtra(EVENT_KEYPRESS_KEY, 0);
                 int action = intent.getIntExtra(EVENT_KEYPRESS_ACTION, 100);
+//                action=1 key down event
+                if (action == 1) {
+                    System.out.println("***********key:" + key);
+                    Message bluetoothMsg = new Message();
+                    bluetoothMsg.what = BLUETOOTHMSG;
+                    bluetoothMsg.obj = key;
+
+                    if (MainActivity.this.socketService != null) {
+                        if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+                            if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                                MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(bluetoothMsg);
+                            }
+                        }
+                    }
+                }
 
 //                if (m_buttonMap.containsKey(key))
 //                    m_buttonMap.get(key).setChecked(action == KeyEvent.ACTION_DOWN);
 //                else {
 //                    reportUnmatched(String.format(getString(action == KeyEvent.ACTION_DOWN ? R.string.unmatched_key_event_down : R.string.unmatched_key_event_up), key + ""));
 //                }
-                System.out.println("***********key:" + key);
+//                System.out.println("***********key:" + key + " ^^^action:" + action);
             }
         }
     };
@@ -429,6 +455,20 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         }
     }
 
+    private void sendTELLMEMsg(){
+
+        Message msg = new Message();
+        msg.what = TELLME;
+
+        if (MainActivity.this.socketService != null) {
+            if (MainActivity.this.socketService.getSocketThread() != null) {
+                if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                    MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msg);
+                }
+            }
+        }
+    }
+
     /**
      * 传感器的监听
      */
@@ -466,6 +506,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
             Message msg = new Message();
             Message msgToMainThread = new Message();
+            Message msgToWorkingThread = new Message();
 
             float[] data;
 
@@ -530,8 +571,20 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                     msgToMainThread.obj = dataMainThread;
                     msgToMainThread.what = CHANGE;
 
+                    msgToWorkingThread.obj = dataMainThread[0];
+                    msgToWorkingThread.what = FRONT;
+
                     MainActivity.this.frontDirection = dataMainThread[0];
                     mainHandler.sendMessage(msgToMainThread);
+
+//                    send front direction to working thread
+                    if (MainActivity.this.socketService != null) {
+                        if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+                            if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                                MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msgToWorkingThread);
+                            }
+                        }
+                    }
                 }
             }
 
