@@ -604,6 +604,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                     msgToWorkingThread.what = FRONT;
 
                     MainActivity.this.frontDirection = dataMainThread[0];
+
                     mainHandler.sendMessage(msgToMainThread);
 
 //                    send front direction to working thread
