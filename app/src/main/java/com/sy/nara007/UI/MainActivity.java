@@ -30,6 +30,7 @@ import android.widget.Toast;
 
 import com.sy.nara007.service.SocketService;
 import com.sy.nara007.service.SocketThread;
+import com.sy.nara007.service.TTSThread;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -76,11 +77,17 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     boolean haveAccelerometer = false;
     boolean haveMagnetometer = false;
 
+    private float[] mGravity = new float[3];
+    private float[] mGeomagnetic = new float[3];
+
     private int mAzimuth = 0; // degree
 
     //TTS
     public static TextToSpeech tts;
 
+
+    // voice mode ,key mode
+    public static boolean isKeyMode=true;
 
     //    bluetooth  These constants are copied from the BluezService
     public static final String SESSION_ID = "com.hexad.bluezime.sessionid";
@@ -153,10 +160,6 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     private ArrayList<String> m_logText = new ArrayList<String>();
 
     private boolean m_connected = false;
-
-    private float[] directionCache = new float[10];
-    private int directionIndex = 0;
-    private AngleLowpassFilter angleFilter = new AngleLowpassFilter();
 
 //    bluetooth
 
@@ -389,17 +392,58 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             } else if (intent.getAction().equals(EVENT_KEYPRESS)) {
                 int key = intent.getIntExtra(EVENT_KEYPRESS_KEY, 0);
                 int action = intent.getIntExtra(EVENT_KEYPRESS_ACTION, 100);
-//                action=1 key down event
-                if (action == 1) {
-                    System.out.println("***********key:" + key);
-                    Message bluetoothMsg = new Message();
-                    bluetoothMsg.what = BLUETOOTHMSG;
-                    bluetoothMsg.obj = key;
 
-                    if (MainActivity.this.socketService != null) {
-                        if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
-                            if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
-                                MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(bluetoothMsg);
+                System.out.println(action);
+
+//                action=1 key up event
+                if (action == 1) {
+
+                    // key 1 value 8
+                    if(key==8){
+
+                        if(isKeyMode){
+                            sendTELLMEMsg();
+                        }
+                    }
+                    // back key, value 30, mode switch
+                    else if(key==30){
+                        synchronized (this) {
+                            if (isKeyMode) {
+                                isKeyMode = false;
+                                new TTSThread("Stimme Mode", true).start();
+                            } else {
+                                isKeyMode = true;
+                                new TTSThread("Taste Mode", true).start();
+                            }
+                        }
+                    }
+
+                    else if(key==29){
+
+                        new TTSThread("Vorne Richtung kalibriert", true).start();
+                        Message bluetoothMsg = new Message();
+                        bluetoothMsg.what = BLUETOOTHMSG;
+                        bluetoothMsg.obj = key;
+
+                        if (MainActivity.this.socketService != null) {
+                            if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+                                if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                                    MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(bluetoothMsg);
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        System.out.println("***********key:" + key);
+                        Message bluetoothMsg = new Message();
+                        bluetoothMsg.what = BLUETOOTHMSG;
+                        bluetoothMsg.obj = key;
+
+                        if (MainActivity.this.socketService != null) {
+                            if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+                                if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                                    MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(bluetoothMsg);
+                                }
                             }
                         }
                     }
@@ -513,24 +557,6 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
      * 传感器的监听
      */
     private SensorEventListener sensoreventlistener = new SensorEventListener() {
-//        @Override
-//        public void onSensorChanged(SensorEvent sensorEvent) {
-//            float[] values = sensorEvent.values;
-//            Message message = new Message();
-//            message.obj = values;
-//            message.what = CHANGE;
-//
-//
-//            if (MainActivity.this.socketService != null) {
-//                if (MainActivity.this.socketService.getSocketThread() != null) {
-//                    if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
-//                        MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(message);
-//                    }
-//                }
-//            }
-//
-//
-//        }
 
 
         float[] gData = new float[3]; // accelerometer
@@ -540,9 +566,14 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         float[] orientation = new float[3];
         float[] dataMainThread = new float[3];
 
+
+
         //        quaternion
         @Override
         public void onSensorChanged(SensorEvent event) {
+
+            final float alpha = 0.97f;
+
 
             Message msg = new Message();
             Message msgToMainThread = new Message();
@@ -550,120 +581,93 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
             float[] data;
 
-
-            if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-                if (rotVecValues == null) {
-                    rotVecValues = new float[event.values.length];
-                }
-                for (int i = 0; i < rotVecValues.length; i++) {
-                    rotVecValues[i] = event.values[i];
-                }
-
-                if (rotVecValues != null) {
-                    SensorManager.getQuaternionFromVector(rotQ, rotVecValues);
-                    SensorManager.getRotationMatrixFromVector(rotvecR, rotVecValues);
-                    SensorManager.getOrientation(rotvecR, rotvecOrientValues);
-
-                    msg.obj = rotQ;
-                    msg.what = CHANGE;
-//                    msgToMainThread.obj = rotvecOrientValues;
-//                    msgToMainThread.what = CHANGE;
-
-
-                    if (MainActivity.this.socketService != null) {
-                        if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
-                            if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
-                                MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msg);
-                            }
-                        }
-                    }
-
-
-                }
-            } else {
-
-                switch (event.sensor.getType()) {
-                    case Sensor.TYPE_ACCELEROMETER:
-                        gData = event.values.clone();
-                        break;
-                    case Sensor.TYPE_MAGNETIC_FIELD:
-                        mData = event.values.clone();
-                        break;
-                    default:
-                        return;
-                }
-
-                if (SensorManager.getRotationMatrix(rMat, iMat, gData, mData)) {
-
-                    SensorManager.getOrientation(rMat, orientation);
-//                    mAzimuth = (int) (Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0]) + 360) % 360;
-//                    dataMainThread[0] = (float) Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0]);
-//                    dataMainThread[1] = (float) Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[1]);
-//                    dataMainThread[2] = (float) Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[2]);
-//                    System.out.println("azimuth:" + (int) (Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0]) + 360) % 360);
-                    // Pitch scaling
-
-
-                    dataMainThread[0] = (float) (Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0]) + 360) % 360;
-                    dataMainThread[1] = (float) Math.toDegrees(orientation[1]);
-
-//                    System.out.println("pitch:" + dataMainThread[1]);
-                    msgToMainThread.obj = dataMainThread;
-                    msgToMainThread.what = CHANGE;
-
-                    msgToWorkingThread.obj = dataMainThread[0];
-                    msgToWorkingThread.what = FRONT;
-
-
-
-
-                    MainActivity.this.frontDirection = dataMainThread[0];
-
-                    directionCache[directionIndex] = MainActivity.this.frontDirection;
-//                    double a = Double.parseDouble(String.valueOf(MainActivity.this.frontDirection));
-//                    directionCache[directionIndex] = (float)Math.toRadians(a);
-
-
-
-
-                    directionIndex = (directionIndex+1)%10;
-
-                    mPointCloudTimeToNextUpdate -= pointCloudFrameDelta;
-
-                    if (mPointCloudTimeToNextUpdate < 0.0) {
-                        mPointCloudTimeToNextUpdate = UPDATE_INTERVAL_MS;
-//                        float curFrontDirection=0;
-//                        float sum=0;
-//                        for(int i=0;i<10;i++){
-//                            angleFilter.add(directionCache[i]);
-//                            sum += directionCache[i];
+            synchronized (this) {
+                if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+//                    if (rotVecValues == null) {
+//                        rotVecValues = new float[event.values.length];
+//                    }
+//                    for (int i = 0; i < rotVecValues.length; i++) {
+//                        rotVecValues[i] = event.values[i];
+//                    }
+//
+//                    if (rotVecValues != null) {
+//                        SensorManager.getQuaternionFromVector(rotQ, rotVecValues);
+//                        SensorManager.getRotationMatrixFromVector(rotvecR, rotVecValues);
+//                        SensorManager.getOrientation(rotvecR, rotvecOrientValues);
+//
+//                        msg.obj = rotQ;
+//                        msg.what = CHANGE;
+//
+//                        if (MainActivity.this.socketService != null) {
+//                            if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+//                                if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+//                                    MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msg);
+//                                }
+//                            }
 //                        }
-                        //System.out.println("front direction:"+MainActivity.this.frontDirection);
+//
+//
+//                    }
+                } else {
 
-                        int difference = 0;
-                        for(int i= 1;i <10;i++){
-                            difference += ( (directionCache[i]- directionCache[0] + 180 + 360 ) % 360 ) - 180;
-                        }
+                    if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
-                        float averageAngle = (360 + directionCache[0] + ( difference / 10 ) ) % 360;
-                        System.out.println("front direction:"+ MainActivity.this.frontDirection);
+                        mGravity[0] = alpha * mGravity[0] + (1 - alpha)
+                                * event.values[0];
+                        mGravity[1] = alpha * mGravity[1] + (1 - alpha)
+                                * event.values[1];
+                        mGravity[2] = alpha * mGravity[2] + (1 - alpha)
+                                * event.values[2];
+
                     }
 
+                    if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
 
-                    mainHandler.sendMessage(msgToMainThread);
+                        mGeomagnetic[0] = alpha * mGeomagnetic[0] + (1 - alpha)
+                                * event.values[0];
+                        mGeomagnetic[1] = alpha * mGeomagnetic[1] + (1 - alpha)
+                                * event.values[1];
+                        mGeomagnetic[2] = alpha * mGeomagnetic[2] + (1 - alpha)
+                                * event.values[2];
 
-//                    send front direction to working thread
-                    if (MainActivity.this.socketService != null) {
-                        if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
-                            if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
-                                MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msgToWorkingThread);
+                    }
+
+                    float R[] = new float[9];
+                    float I[] = new float[9];
+
+                    boolean success = SensorManager.getRotationMatrix(R, I, mGravity,
+                            mGeomagnetic);
+
+                    if (success) {
+                        float orientation[] = new float[3];
+                        SensorManager.getOrientation(R, orientation);
+                        dataMainThread[0] = (float) Math.toDegrees(orientation[0]); // orientation
+                        dataMainThread[0] = (dataMainThread[0] + 360) % 360;
+                        dataMainThread[1] = (float) Math.toDegrees(orientation[1]);
+
+                        msgToMainThread.obj = dataMainThread;
+                        msgToMainThread.what = CHANGE;
+
+                        msgToWorkingThread.obj = dataMainThread[0];
+                        msgToWorkingThread.what = FRONT;
+
+                        MainActivity.this.frontDirection = dataMainThread[0];
+                        mainHandler.sendMessage(msgToMainThread);
+
+                        //  send front direction to working thread
+                        if (MainActivity.this.socketService != null) {
+                            if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+                                if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                                    MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msgToWorkingThread);
+                                }
                             }
                         }
+
                     }
+
                 }
+
             }
-
-
         }
 
         @Override
@@ -684,7 +688,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
                     float[] values = (float[]) msg.obj;
 
-//                    tv_X.setText("手机沿Z  Yaw轴转过的角度为：" + Float.toString(values[0]));
+                    tv_X.setText("手机沿Z  Yaw轴转过的角度为：" + Float.toString(values[0]));
 //                    tv_Y.setText("手机沿X  Pitch轴转过的角度为：" + Float.toString(values[1]));
 //                    tv_Z.setText("手机沿Y  Roll轴转过的角度为：" + Float.toString(values[2]));
 
@@ -694,8 +698,9 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
 //                    System.out.println("main线程收到消息:" + Float.toString(values[0]) + "  " + Float.toString(values[1]) + "  " + Float.toString(values[2]));
 
-
-                    startOrEndVoiceRecognition(values);
+                    if(!isKeyMode) {
+                        startOrEndVoiceRecognition(values);
+                    }
                     break;
             }
             super.handleMessage(msg);
@@ -723,34 +728,6 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         }
     }
 
-
-//    private SensorEventListener sensoreventlistenerQuaternion = new SensorEventListener(){
-//
-//        @Override
-//        public void onSensorChanged(SensorEvent event){
-//            if(event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR){
-//                if(rotVecValues == null){
-//                    rotVecValues = new float[event.values.length];
-//                }
-//                for(int i = 0; i < rotVecValues.length; i++){
-//                    rotVecValues[i] = event.values[i];
-//                }
-//
-//                if(rotVecValues != null){
-//                    SensorManager.getQuaternionFromVector(rotQ, rotVecValues);
-//                    SensorManager.getRotationMatrixFromVector(rotvecR, rotVecValues);
-//                    SensorManager.getOrientation(rotvecR, rotvecOrientValues);
-//                }
-//            }
-//        }
-//
-//        @Override
-//        public void onAccuracyChanged(Sensor sensor, int i) {
-//
-//        }
-//    };
-
-
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
 
@@ -764,39 +741,4 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         System.out.println("onServiceDisconnected");
     }
 
-
-
-    public class AngleLowpassFilter {
-
-        private final int LENGTH = 10;
-
-        private float sumSin, sumCos;
-
-        private ArrayDeque<Float> queue = new ArrayDeque<Float>();
-
-        public void add(float radians){
-
-            sumSin += (float) Math.sin(radians);
-
-            sumCos += (float) Math.cos(radians);
-
-            queue.add(radians);
-
-            if(queue.size() > LENGTH){
-
-                float old = queue.poll();
-
-                sumSin -= Math.sin(old);
-
-                sumCos -= Math.cos(old);
-            }
-        }
-
-        public float average(){
-
-            int size = queue.size();
-
-            return (float) Math.atan2(sumSin / size, sumCos / size);
-        }
-    }
 }

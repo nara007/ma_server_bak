@@ -23,9 +23,11 @@ public class TTSThread extends Thread {
 
     private String xmlStr;
     private TextToSpeech tts = MainActivity.tts;
+    private boolean isSimpleString;
 
 
-    public TTSThread(String xmlStr) {
+    public TTSThread(String xmlStr, boolean isSimpleString) {
+        this.isSimpleString = isSimpleString;
         this.xmlStr = xmlStr;
         System.out.println("TTS:" +xmlStr);
     }
@@ -33,8 +35,14 @@ public class TTSThread extends Thread {
     Objects objs;
 
     public void run() {
-        deserialize();
-        speak(extractStringFromObjs());
+        if(isSimpleString){
+            speak(this.xmlStr);
+        }
+        else{
+            deserialize();
+            speak(extractStringFromObjs());
+        }
+
     }
 
     private void deserialize() {
@@ -82,7 +90,7 @@ public class TTSThread extends Thread {
         return str;
     }
 
-    private void speak(String text) {
+    public void speak(String text) {
 
         if (tts.isSpeaking()) {
             tts.stop();

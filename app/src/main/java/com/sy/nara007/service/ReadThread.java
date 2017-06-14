@@ -49,7 +49,7 @@ public class ReadThread extends Thread {
 
         try {
             while ((str = br.readLine()) != null) {
-                new TTSThread(str).start();
+                new TTSThread(str, false).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
