@@ -31,6 +31,7 @@ import android.widget.Toast;
 import com.sy.nara007.service.SocketService;
 import com.sy.nara007.service.SocketThread;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
@@ -136,6 +137,11 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     public static final String SESSION_NAME = "TEST-BLUEZ-IME";
 
 
+    private static final double UPDATE_INTERVAL_MS = 100.0;
+    final double pointCloudFrameDelta = 10.0;
+    private double mPointCloudTimeToNextUpdate = UPDATE_INTERVAL_MS;
+
+
     private String m_selectedDriver;
     private Button m_button;
 
@@ -147,6 +153,10 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     private ArrayList<String> m_logText = new ArrayList<String>();
 
     private boolean m_connected = false;
+
+    private float[] directionCache = new float[10];
+    private int directionIndex = 0;
+    private AngleLowpassFilter angleFilter = new AngleLowpassFilter();
 
 //    bluetooth
 
@@ -197,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
             for(String str:matches){
                 if(str.contains("tell me") && !str.contains("not") && !str.contains("don't") && !str.contains("do not"))
                 {
-//                    System.out.println("this string contains tell me");
+                    System.out.println("this string contains tell me");
                     sendTELLMEMsg();
                     break;
                 }
@@ -267,6 +277,7 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                     Intent serviceIntent = new Intent(REQUEST_CONNECT);
                     serviceIntent.setClassName(BLUEZ_IME_PACKAGE, BLUEZ_IME_SERVICE);
                     serviceIntent.putExtra(SESSION_ID, SESSION_NAME);
+                    //wii
                     serviceIntent.putExtra(REQUEST_CONNECT_ADDRESS, "00:1E:35:3B:DF:72");
                     serviceIntent.putExtra(REQUEST_CONNECT_DRIVER, m_selectedDriver);
                     startService(serviceIntent);
@@ -603,7 +614,41 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                     msgToWorkingThread.obj = dataMainThread[0];
                     msgToWorkingThread.what = FRONT;
 
+
+
+
                     MainActivity.this.frontDirection = dataMainThread[0];
+
+                    directionCache[directionIndex] = MainActivity.this.frontDirection;
+//                    double a = Double.parseDouble(String.valueOf(MainActivity.this.frontDirection));
+//                    directionCache[directionIndex] = (float)Math.toRadians(a);
+
+
+
+
+                    directionIndex = (directionIndex+1)%10;
+
+                    mPointCloudTimeToNextUpdate -= pointCloudFrameDelta;
+
+                    if (mPointCloudTimeToNextUpdate < 0.0) {
+                        mPointCloudTimeToNextUpdate = UPDATE_INTERVAL_MS;
+//                        float curFrontDirection=0;
+//                        float sum=0;
+//                        for(int i=0;i<10;i++){
+//                            angleFilter.add(directionCache[i]);
+//                            sum += directionCache[i];
+//                        }
+                        //System.out.println("front direction:"+MainActivity.this.frontDirection);
+
+                        int difference = 0;
+                        for(int i= 1;i <10;i++){
+                            difference += ( (directionCache[i]- directionCache[0] + 180 + 360 ) % 360 ) - 180;
+                        }
+
+                        float averageAngle = (360 + directionCache[0] + ( difference / 10 ) ) % 360;
+                        System.out.println("front direction:"+ MainActivity.this.frontDirection);
+                    }
+
 
                     mainHandler.sendMessage(msgToMainThread);
 
@@ -719,4 +764,39 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         System.out.println("onServiceDisconnected");
     }
 
+
+
+    public class AngleLowpassFilter {
+
+        private final int LENGTH = 10;
+
+        private float sumSin, sumCos;
+
+        private ArrayDeque<Float> queue = new ArrayDeque<Float>();
+
+        public void add(float radians){
+
+            sumSin += (float) Math.sin(radians);
+
+            sumCos += (float) Math.cos(radians);
+
+            queue.add(radians);
+
+            if(queue.size() > LENGTH){
+
+                float old = queue.poll();
+
+                sumSin -= Math.sin(old);
+
+                sumCos -= Math.cos(old);
+            }
+        }
+
+        public float average(){
+
+            int size = queue.size();
+
+            return (float) Math.atan2(sumSin / size, sumCos / size);
+        }
+    }
 }

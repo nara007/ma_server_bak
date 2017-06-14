@@ -27,6 +27,7 @@ public class TTSThread extends Thread {
 
     public TTSThread(String xmlStr) {
         this.xmlStr = xmlStr;
+        System.out.println("TTS:" +xmlStr);
     }
 
     Objects objs;
