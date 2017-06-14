@@ -251,9 +251,9 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         initOrientationSensor();
 
         this.mAccelerometer = this.sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        this.haveAccelerometer = this.sensorManager.registerListener(sensoreventlistener, this.mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        this.haveAccelerometer = this.sensorManager.registerListener(sensoreventlistener, this.mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
         this.mMagnetometer = this.sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        this.haveMagnetometer = this.sensorManager.registerListener(sensoreventlistener, this.mMagnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+        this.haveMagnetometer = this.sensorManager.registerListener(sensoreventlistener, this.mMagnetometer, SensorManager.SENSOR_DELAY_GAME);
 
 
         //        bluetooth
@@ -583,31 +583,31 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
             synchronized (this) {
                 if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-//                    if (rotVecValues == null) {
-//                        rotVecValues = new float[event.values.length];
-//                    }
-//                    for (int i = 0; i < rotVecValues.length; i++) {
-//                        rotVecValues[i] = event.values[i];
-//                    }
-//
-//                    if (rotVecValues != null) {
-//                        SensorManager.getQuaternionFromVector(rotQ, rotVecValues);
-//                        SensorManager.getRotationMatrixFromVector(rotvecR, rotVecValues);
-//                        SensorManager.getOrientation(rotvecR, rotvecOrientValues);
-//
-//                        msg.obj = rotQ;
-//                        msg.what = CHANGE;
-//
-//                        if (MainActivity.this.socketService != null) {
-//                            if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
-//                                if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
-//                                    MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msg);
-//                                }
-//                            }
-//                        }
-//
-//
-//                    }
+                    if (rotVecValues == null) {
+                        rotVecValues = new float[event.values.length];
+                    }
+                    for (int i = 0; i < rotVecValues.length; i++) {
+                        rotVecValues[i] = event.values[i];
+                    }
+
+                    if (rotVecValues != null) {
+                        SensorManager.getQuaternionFromVector(rotQ, rotVecValues);
+                        SensorManager.getRotationMatrixFromVector(rotvecR, rotVecValues);
+                        SensorManager.getOrientation(rotvecR, rotvecOrientValues);
+
+                        msg.obj = rotQ;
+                        msg.what = CHANGE;
+
+                        if (MainActivity.this.socketService != null) {
+                            if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+                                if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                                    MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msg);
+                                }
+                            }
+                        }
+
+
+                    }
                 } else {
 
                     if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
