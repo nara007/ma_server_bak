@@ -81,7 +81,8 @@ public class TTSThread extends Thread {
 
             str += "Object " + i + " ";
             str += "Kategorie " + obj.getCategory() + " ";
-            str += "Abstand " + num1 + " Punkt "+ num2+" "+num3+" Meter";
+            str += "Abstand " + num1 + " Punkt "+ num2+" "+num3+" Meter ";
+            str += "Richtung " + obj.getDirectionInClock();
             i++;
         }
 

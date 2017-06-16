@@ -89,6 +89,11 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     // voice mode ,key mode
     public static boolean isKeyMode=true;
 
+    //scope mode
+    public ScopeMode scopeMode = ScopeMode.FOUR;
+    public int ModeSwitchTreshold = 30;
+    public int ModeStep = 0;
+
     //    bluetooth  These constants are copied from the BluezService
     public static final String SESSION_ID = "com.hexad.bluezime.sessionid";
 
@@ -393,8 +398,6 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                 int key = intent.getIntExtra(EVENT_KEYPRESS_KEY, 0);
                 int action = intent.getIntExtra(EVENT_KEYPRESS_ACTION, 100);
 
-                System.out.println(action);
-
 //                action=1 key up event
                 if (action == 1) {
 
@@ -433,8 +436,28 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                             }
                         }
                     }
+
+                    //key home, value 36, switch scope mode
+                    else if(key==36){
+                        ModeStep = (ModeStep+1) % ModeSwitchTreshold;
+                        if(ModeStep == 0){
+                            switchScopeMode();
+
+                            Message bluetoothMsg = new Message();
+                            bluetoothMsg.what = BLUETOOTHMSG;
+                            bluetoothMsg.obj = key;
+
+                            if (MainActivity.this.socketService != null) {
+                                if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+                                    if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                                        MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(bluetoothMsg);
+                                    }
+                                }
+                            }
+
+                        }
+                    }
                     else {
-                        System.out.println("***********key:" + key);
                         Message bluetoothMsg = new Message();
                         bluetoothMsg.what = BLUETOOTHMSG;
                         bluetoothMsg.obj = key;
@@ -741,4 +764,29 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
         System.out.println("onServiceDisconnected");
     }
 
+
+
+    //enum three different scope modes
+    public enum ScopeMode{
+        FOUR, SIX, EIGHT
+    }
+
+    public void switchScopeMode(){
+        if(scopeMode == ScopeMode.FOUR){
+            scopeMode = ScopeMode.SIX;
+            new TTSThread("60 Grad Mode", true).start();
+        }
+        else if(scopeMode == ScopeMode.SIX){
+            scopeMode = ScopeMode.EIGHT;
+            new TTSThread("45 Grad Mode", true).start();
+        }
+
+        else if(scopeMode == ScopeMode.EIGHT){
+            scopeMode = ScopeMode.FOUR;
+            new TTSThread("90 Grad Mode", true).start();
+        }
+        else{
+
+        }
+    }
 }

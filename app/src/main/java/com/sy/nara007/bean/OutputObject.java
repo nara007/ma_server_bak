@@ -9,6 +9,7 @@ public class OutputObject {
     private float direction;
     private float distance;
     private String category;
+    private String directionInClock;
 
     public int getId() {
         return id;
@@ -41,4 +42,14 @@ public class OutputObject {
     public void setCategory(String category) {
         this.category = category;
     }
+
+    public void setDirectionInClock(String directionInClock){
+        this.directionInClock = directionInClock;
+    }
+
+    public String getDirectionInClock(){
+        return this.directionInClock;
+    }
+
+
 }
