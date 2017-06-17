@@ -90,8 +90,8 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
     public static boolean isKeyMode=true;
 
     //scope mode
-    public ScopeMode scopeMode = ScopeMode.FOUR;
-    public int ModeSwitchTreshold = 30;
+    public OperationMode operationMode = OperationMode.STICK;
+    public int ModeSwitchTreshold = 3;
     public int ModeStep = 0;
 
     //    bluetooth  These constants are copied from the BluezService
@@ -401,15 +401,18 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 //                action=1 key up event
                 if (action == 1) {
 
-                    // key 1 value 8
-                    if(key==8){
+                    System.out.println(key);
+                    // back key  value 30
+                    if(key==30){
 
                         if(isKeyMode){
-                            sendTELLMEMsg();
+                            if(operationMode == OperationMode.STICK){
+                                sendTELLMEMsg();
+                            }
                         }
                     }
-                    // back key, value 30, mode switch
-                    else if(key==30){
+                    // 1 key, value 8, mode switch
+                    else if(key==8){
                         synchronized (this) {
                             if (isKeyMode) {
                                 isKeyMode = false;
@@ -417,6 +420,27 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                             } else {
                                 isKeyMode = true;
                                 new TTSThread("Taste Mode", true).start();
+                            }
+                        }
+                    }
+
+                    //up down left right 19 20 21 22
+                    else if(key==19 || key== 20 || key==21 || key==22){
+                        if(isKeyMode){
+                            if(operationMode == OperationMode.CROSS){
+
+                                Message bluetoothMsg = new Message();
+                                bluetoothMsg.what = BLUETOOTHMSG;
+                                bluetoothMsg.obj = key;
+
+                                if (MainActivity.this.socketService != null) {
+                                    if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+                                        if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                                            MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(bluetoothMsg);
+                                        }
+                                    }
+                                }
+
                             }
                         }
                     }
@@ -441,19 +465,19 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                     else if(key==36){
                         ModeStep = (ModeStep+1) % ModeSwitchTreshold;
                         if(ModeStep == 0){
-                            switchScopeMode();
+                            switchOperationMode();
 
-                            Message bluetoothMsg = new Message();
-                            bluetoothMsg.what = BLUETOOTHMSG;
-                            bluetoothMsg.obj = key;
-
-                            if (MainActivity.this.socketService != null) {
-                                if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
-                                    if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
-                                        MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(bluetoothMsg);
-                                    }
-                                }
-                            }
+//                            Message bluetoothMsg = new Message();
+//                            bluetoothMsg.what = BLUETOOTHMSG;
+//                            bluetoothMsg.obj = key;
+//
+//                            if (MainActivity.this.socketService != null) {
+//                                if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+//                                    if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+//                                        MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(bluetoothMsg);
+//                                    }
+//                                }
+//                            }
 
                         }
                     }
@@ -766,27 +790,22 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
 
 
-    //enum three different scope modes
-    public enum ScopeMode{
-        FOUR, SIX, EIGHT
+    //enum two operation modes stick and cross key
+    public enum OperationMode{
+        STICK, CROSS
     }
 
-    public void switchScopeMode(){
-        if(scopeMode == ScopeMode.FOUR){
-            scopeMode = ScopeMode.SIX;
-            new TTSThread("60 Grad Mode", true).start();
-        }
-        else if(scopeMode == ScopeMode.SIX){
-            scopeMode = ScopeMode.EIGHT;
-            new TTSThread("45 Grad Mode", true).start();
-        }
+    public void switchOperationMode() {
+        synchronized (this) {
+            if (operationMode == OperationMode.STICK) {
+                operationMode = OperationMode.CROSS;
+                new TTSThread("cross key mode", true).start();
+            } else if (operationMode == OperationMode.CROSS) {
+                operationMode = OperationMode.STICK;
+                new TTSThread("stick mode", true).start();
+            } else {
 
-        else if(scopeMode == ScopeMode.EIGHT){
-            scopeMode = ScopeMode.FOUR;
-            new TTSThread("90 Grad Mode", true).start();
-        }
-        else{
-
+            }
         }
     }
 }

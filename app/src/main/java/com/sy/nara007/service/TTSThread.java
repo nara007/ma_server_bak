@@ -4,6 +4,7 @@ import android.icu.math.BigDecimal;
 import android.os.Build;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.support.annotation.NonNull;
 
 import com.sy.nara007.UI.MainActivity;
 import com.sy.nara007.bean.Objects;
@@ -11,6 +12,9 @@ import com.sy.nara007.bean.OutputObject;
 import com.thoughtworks.xstream.XStream;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import static android.content.ContentValues.TAG;
@@ -57,22 +61,52 @@ public class TTSThread extends Thread {
     }
 
 
+//    private String extractStringFromObjs() {
+//
+//        String str = "";
+//        ArrayList list = (ArrayList) (objs.getObjects());
+//        if (list.size() == 0) {
+//            return "nothing has been found";
+//        }
+//
+//        int i = 1;
+//        for (Iterator it = list.iterator(); it.hasNext(); ) {
+//            OutputObject obj = (OutputObject) (it.next());
+////            BigDecimal b = new BigDecimal(obj.getDistance());
+//
+////            str += "distance " + b.setScale(2).floatValue() + " ";
+//
+//
+//
+//            double num = obj.getDistance();
+//            int num1 = (int)(Math.floor(num));
+//            int num2 = (int)(Math.floor(num*10-num1*10));
+//            int num3 = (int)(Math.floor(num*100-num1*100-num2*10));
+//
+//            str += "Object " + i + " ";
+//            str += "Kategorie " + obj.getCategory() + " ";
+//            str += "Abstand " + num1 + " Punkt "+ num2+" "+num3+" Meter ";
+//            str += "Richtung " + obj.getDirectionInClock();
+//            i++;
+//        }
+//
+//        System.out.println(str);
+//
+//        return str;
+//    }
+
     private String extractStringFromObjs() {
 
-        String str = "";
+        String str="";
         ArrayList list = (ArrayList) (objs.getObjects());
         if (list.size() == 0) {
             return "nothing has been found";
         }
 
+        Collections.sort(list, new MyComparator());
         int i = 1;
         for (Iterator it = list.iterator(); it.hasNext(); ) {
             OutputObject obj = (OutputObject) (it.next());
-//            BigDecimal b = new BigDecimal(obj.getDistance());
-
-//            str += "distance " + b.setScale(2).floatValue() + " ";
-
-
 
             double num = obj.getDistance();
             int num1 = (int)(Math.floor(num));
@@ -90,6 +124,7 @@ public class TTSThread extends Thread {
 
         return str;
     }
+
 
     public void speak(String text) {
 
@@ -134,5 +169,30 @@ public class TTSThread extends Thread {
         }
 
 
+    }
+
+    public class MyComparator implements Comparator<OutputObject> {
+
+        @Override
+        public int compare(OutputObject o1, OutputObject o2) {
+            if(o1.getDirection() < o2.getDirection()){
+                if((o2.getDirection()-o1.getDirection())<180){
+                    return -1;
+                }
+
+                else{
+                    return 1;
+                }
+            }
+
+            else{
+                if((o1.getDirection()-o2.getDirection())<180){
+                    return 1;
+                }
+                else{
+                    return -1;
+                }
+            }
+        }
     }
 }
