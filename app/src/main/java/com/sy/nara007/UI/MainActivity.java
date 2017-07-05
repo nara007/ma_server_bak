@@ -150,9 +150,11 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
 
 
     private static final double UPDATE_INTERVAL_MS = 100.0;
-    final double pointCloudFrameDelta = 10.0;
-    private double mPointCloudTimeToNextUpdate = UPDATE_INTERVAL_MS;
+    final double dataFrameDelta = 10.0;
+    private double dataTimeToNextUpdate = UPDATE_INTERVAL_MS;
 
+    final double frontFrameDelta = 10.0;
+    private double frontTimeToNextUpdate = UPDATE_INTERVAL_MS;
 
     private String m_selectedDriver;
     private Button m_button;
@@ -638,19 +640,28 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                     }
 
                     if (rotVecValues != null) {
-                        SensorManager.getQuaternionFromVector(rotQ, rotVecValues);
-                        SensorManager.getRotationMatrixFromVector(rotvecR, rotVecValues);
-                        SensorManager.getOrientation(rotvecR, rotvecOrientValues);
 
-                        msg.obj = rotQ;
-                        msg.what = CHANGE;
+                        dataTimeToNextUpdate -= dataFrameDelta;
 
-                        if (MainActivity.this.socketService != null) {
-                            if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
-                                if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
-                                    MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msg);
+                        if (dataTimeToNextUpdate < 0.0) {
+
+                            dataTimeToNextUpdate = UPDATE_INTERVAL_MS;
+
+                            SensorManager.getQuaternionFromVector(rotQ, rotVecValues);
+                            SensorManager.getRotationMatrixFromVector(rotvecR, rotVecValues);
+                            SensorManager.getOrientation(rotvecR, rotvecOrientValues);
+
+                            msg.obj = rotQ;
+                            msg.what = CHANGE;
+
+                            if (MainActivity.this.socketService != null) {
+                                if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+                                    if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                                        MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msg);
+                                    }
                                 }
                             }
+
                         }
 
 
@@ -686,30 +697,39 @@ public class MainActivity extends AppCompatActivity implements ServiceConnection
                             mGeomagnetic);
 
                     if (success) {
-                        float orientation[] = new float[3];
-                        SensorManager.getOrientation(R, orientation);
-                        dataMainThread[0] = (float) Math.toDegrees(orientation[0]); // orientation
-                        dataMainThread[0] = (dataMainThread[0] + 360) % 360;
-                        dataMainThread[1] = (float) Math.toDegrees(orientation[1]);
 
-                        msgToMainThread.obj = dataMainThread;
-                        msgToMainThread.what = CHANGE;
 
-                        msgToWorkingThread.obj = dataMainThread[0];
-                        msgToWorkingThread.what = FRONT;
+                        frontTimeToNextUpdate -= frontFrameDelta;
 
-                        MainActivity.this.frontDirection = dataMainThread[0];
-                        mainHandler.sendMessage(msgToMainThread);
+                        if (frontTimeToNextUpdate < 0.0) {
 
-                        //  send front direction to working thread
-                        if (MainActivity.this.socketService != null) {
-                            if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
-                                if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
-                                    MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msgToWorkingThread);
+                            frontTimeToNextUpdate = UPDATE_INTERVAL_MS;
+
+                            float orientation[] = new float[3];
+                            SensorManager.getOrientation(R, orientation);
+                            dataMainThread[0] = (float) Math.toDegrees(orientation[0]); // orientation
+                            dataMainThread[0] = (dataMainThread[0] + 360) % 360;
+                            dataMainThread[1] = (float) Math.toDegrees(orientation[1]);
+
+                            msgToMainThread.obj = dataMainThread;
+                            msgToMainThread.what = CHANGE;
+
+                            msgToWorkingThread.obj = dataMainThread[0];
+                            msgToWorkingThread.what = FRONT;
+
+                            MainActivity.this.frontDirection = dataMainThread[0];
+                            mainHandler.sendMessage(msgToMainThread);
+
+                            //  send front direction to working thread
+                            if (MainActivity.this.socketService != null) {
+                                if (MainActivity.this.socketService.getSocketThread() != null && MainActivity.this.socketService.getSocketThread().isAlive()) {
+                                    if (MainActivity.this.socketService.getSocketThread().getMsgHandler() != null) {
+                                        MainActivity.this.socketService.getSocketThread().getMsgHandler().sendMessage(msgToWorkingThread);
+                                    }
                                 }
                             }
-                        }
 
+                        }
                     }
 
                 }
